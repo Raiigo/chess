@@ -164,9 +164,71 @@ const ROOK: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (usize, usize) = (end_pos.0 - start_pos.0, end_pos.1 - start_pos.1);
+        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let piece = match board[start_pos.0][start_pos.1] {
+            Some(piece) => piece,
+            None => return false, // No piece has been selected to be moved
+        };
+        let end_opt = board[end_pos.0][end_pos.1];
 
-        false
+        // Check directions
+        if (move_vec.0 != 0 && move_vec.1 != 0) || (move_vec.0 == 0 && move_vec.1 == 0) {
+            return false;
+        }
+
+        let mut pos_set: Vec<Option<Piece>> = vec![];
+
+        if move_vec.0 != 0 {
+            if move_vec.0 < 0 {
+                for i in end_pos.0..start_pos.0 {
+                    pos_set.push(board[i][start_pos.1]);
+                }
+            } else if move_vec.0 > 0 {
+                for i in (start_pos.0 + 1)..(end_pos.0 + 1) {
+                    pos_set.push(board[i][start_pos.1]);
+                }
+            }
+        } else if move_vec.1 != 0 {
+            if move_vec.1 < 0 {
+                for i in end_pos.1..start_pos.1 {
+                    pos_set.push(board[start_pos.0][i]);
+                }
+            } else if move_vec.1 > 0 {
+                for i in (start_pos.1 + 1)..(end_pos.1 + 1) {
+                    pos_set.push(board[start_pos.0][i]);
+                }
+            }
+        } else {
+            return false;
+        }
+
+        for i in 0..(pos_set.len() - 1) {
+            match pos_set[i] {
+                Some(_) => return false,
+                None => continue,
+            }
+        }
+
+        match piece.color {
+            Color::White => {
+                match end_opt {
+                    Some(end_piece) => match end_piece.color {
+                        Color::White => return false,
+                        Color::Black => return true,
+                    },
+                    None => return true,
+                }
+            },
+            Color::Black => {
+                match end_opt {
+                    Some(end_piece) => match end_piece.color {
+                        Color::White => return true,
+                        Color::Black => return false,
+                    },
+                    None => return true,
+                }
+            },
+        }
     }
 };
 const KNIGHT: Piece = Piece {
@@ -176,9 +238,42 @@ const KNIGHT: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (usize, usize) = (end_pos.0 - start_pos.0, end_pos.1 - start_pos.1);
+        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let piece = match board[start_pos.0][start_pos.1] {
+            Some(piece) => if piece.piece_type != PieceType::Knight {
+                return false;
+            } else {
+                piece
+            },
+            None => return false, // No piece has been selected to be moved
+        };
+        let end_opt = board[end_pos.0][end_pos.1];
 
-        false
+        // Check directions
+        if !(((move_vec.1 == 2 || move_vec.1 == -2) && (move_vec.0 == 1 || move_vec.0 == -1)) || ((move_vec.0 == 2 || move_vec.0 == -2) && (move_vec.1 == 1 || move_vec.1 == -1))) {
+            return false;
+        }
+
+        match piece.color {
+            Color::White => {
+                match end_opt {
+                    Some(end_piece) => match end_piece.color {
+                        Color::White => return false,
+                        Color::Black => return true,
+                    },
+                    None => return true,
+                }
+            },
+            Color::Black => {
+                match end_opt {
+                    Some(end_piece) => match end_piece.color {
+                        Color::White => return true,
+                        Color::Black => return false,
+                    },
+                    None => return true,
+                }
+            },
+        }
     }
 };
 const BISHOP: Piece = Piece {
@@ -188,9 +283,76 @@ const BISHOP: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (usize, usize) = (end_pos.0 - start_pos.0, end_pos.1 - start_pos.1);
+        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let piece = match board[start_pos.0][start_pos.1] {
+            Some(piece) => piece,
+            None => return false, // No piece has been selected to be moved
+        };
+        let end_opt = board[end_pos.0][end_pos.1];
 
-        false
+        if move_vec.0.abs() != move_vec.1.abs() || move_vec.0 == 0 {
+            return false;
+        }
+
+        let mut pos_set: Vec<Option<Piece>> = vec![];
+
+        if move_vec.0 < 0 {
+            if move_vec.1 < 0 {
+                for i in end_pos.0..start_pos.0 {
+                    for j in end_pos.1..start_pos.1 {
+                        pos_set.push(board[i][j]);
+                    }
+                }
+            } else if move_vec.1 > 0 {
+                for i in end_pos.0..start_pos.0 {
+                    for j in (start_pos.1 + 1)..(end_pos.1 + 1) {
+                        pos_set.push(board[i][j]);
+                    }
+                }
+            }
+        } else if move_vec.0 > 0 {
+            if move_vec.1 < 0 {
+                for i in (start_pos.0 + 1)..(end_pos.0 + 1) {
+                    for j in end_pos.1..start_pos.1 {
+                        pos_set.push(board[i][j]);
+                    }
+                }
+            } else if move_vec.1 > 0 {
+                for i in (start_pos.0 + 1)..(end_pos.0 + 1) {
+                    for j in (start_pos.1 + 1)..(end_pos.1 + 1) {
+                        pos_set.push(board[i][j]);
+                    }
+                }
+            }
+        }
+
+        for i in 0..(pos_set.len() - 1) {
+            match pos_set[i] {
+                Some(_) => return false,
+                None => continue,
+            }
+        }
+
+        match piece.color {
+            Color::White => {
+                match end_opt {
+                    Some(end_piece) => match end_piece.color {
+                        Color::White => return false,
+                        Color::Black => return true,
+                    },
+                    None => return true,
+                }
+            },
+            Color::Black => {
+                match end_opt {
+                    Some(end_piece) => match end_piece.color {
+                        Color::White => return true,
+                        Color::Black => return false,
+                    },
+                    None => return true,
+                }
+            },
+        }
     }
 };
 const QUEEN: Piece = Piece {
@@ -200,9 +362,11 @@ const QUEEN: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (usize, usize) = (end_pos.0 - start_pos.0, end_pos.1 - start_pos.1);
-
-        false
+        if (ROOK.check_move)(board, start_pos, end_pos) || (BISHOP.check_move)(board, start_pos, end_pos) {
+            return true
+        } else {
+            false
+        }
     }
 };
 const KING: Piece = Piece {
@@ -212,9 +376,40 @@ const KING: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (usize, usize) = (end_pos.0 - start_pos.0, end_pos.1 - start_pos.1);
+        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let piece = match board[start_pos.0][start_pos.1] {
+            Some(piece) => if piece.piece_type != PieceType::King {
+                return false;
+            } else {
+                piece
+            },
+            None => return false, // No piece has been selected to be moved
+        };
+        let end_opt = board[end_pos.0][end_pos.1];
 
-        false
+        if !(move_vec.0.abs() == 1 || move_vec.1.abs() == -1) || (move_vec.0 == 0 && move_vec.1 == 0) {
+            return false;
+        }
+
+        // HAVE TO CHECK IF MOVING KING RESULT IN MATE !!
+        
+
+        match piece.color {
+            Color::White => match end_opt {
+                Some(end_piece) => match end_piece.color {
+                    Color::White => return false,
+                    Color::Black => return true,
+                },
+                None => return true,
+            },
+            Color::Black => match end_opt {
+                Some(end_piece) => match end_piece.color {
+                    Color::White => return true,
+                    Color::Black => return false,
+                },
+                None => return true,
+            },
+        }
     }
 };
 
