@@ -1,3 +1,5 @@
+use std::io::{stdin, stdout, Write};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
     White,
@@ -38,7 +40,7 @@ const PAWN: Piece = Piece {
     jump: Some(true),
     en_passant: Some(false),
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let move_vec: (isize, isize) = ((end_pos.0 as isize - start_pos.0 as isize), (end_pos.1 as isize - start_pos.1 as isize));
         let piece = match board[start_pos.0][start_pos.1] {
             Some(piece) => if piece.piece_type != PieceType::Pawn {
                 return false;
@@ -432,12 +434,94 @@ fn main() {
                                               [Some(KNIGHT.clone().color(Color::White)), Some(PAWN.clone().color(Color::White)), None, None, None, None, Some(PAWN.clone().color(Color::Black)), Some(KNIGHT.clone().color(Color::Black))],
                                               [Some(ROOK.clone().color(Color::White)), Some(PAWN.clone().color(Color::White)), None, None, None, None, Some(PAWN.clone().color(Color::Black)), Some(ROOK.clone().color(Color::Black))]];
 
-    match board[0][1] {
-        Some(piece) => println!("Result : {}", (piece.check_move)(&board, (0, 1), (0, 2))),
-        None => println!("Error, no piece selected"),
-    }
+    // match board[0][1] {
+    //     Some(piece) => println!("Result : {}", (piece.check_move)(&board, (0, 1), (0, 2))),
+    //     None => println!("Error, no piece selected"),
+    // }
 
-    display_board(&board);
+    loop {
+        display_board(&board);
+        println!();
+        let mut move_expr = String::new();
+        print!("-> ");
+        match stdout().flush() {
+            Ok(_) => (),
+            Err(_) => panic!(),
+        };
+        stdin().read_line(&mut move_expr).expect("Error while reading stdin");
+        if let Some('\n')=move_expr.chars().next_back() {
+            move_expr.pop();
+        }
+        if let Some('\r')=move_expr.chars().next_back() {
+            move_expr.pop();
+        }
+        let (start_pos, end_pos) = match parse_move(&move_expr) {
+            Some(t) => t,
+            None => continue,
+        };
+        match board[start_pos.0][start_pos.1] {
+            Some(piece) => match piece.piece_type {
+                PieceType::Pawn => {
+                    if (PAWN.check_move)(&board, start_pos, end_pos) {
+                        board[end_pos.0][end_pos.1] = Some(piece);
+                        board[start_pos.0][start_pos.1] = None;
+                    } else {
+                        println!("Enter a valid move");
+                        continue
+                    }
+                },
+                PieceType::Rook => {
+                    if (ROOK.check_move)(&board, start_pos, end_pos) {
+                        board[end_pos.0][end_pos.1] = Some(piece);
+                        board[start_pos.0][start_pos.1] = None;
+                    } else {
+                        println!("Enter a valid move");
+                        continue
+                    }
+                },
+                PieceType::Knight => {
+                    if (KNIGHT.check_move)(&board, start_pos, end_pos) {
+                        board[end_pos.0][end_pos.1] = Some(piece);
+                        board[start_pos.0][start_pos.1] = None;
+                    } else {
+                        println!("Enter a valid move");
+                        continue
+                    }
+                },
+                PieceType::Bishop => {
+                    if (BISHOP.check_move)(&board, start_pos, end_pos) {
+                        board[end_pos.0][end_pos.1] = Some(piece);
+                        board[start_pos.0][start_pos.1] = None;
+                    } else {
+                        println!("Enter a valid move");
+                        continue
+                    }
+                },
+                PieceType::Queen => {
+                    if (QUEEN.check_move)(&board, start_pos, end_pos) {
+                        board[end_pos.0][end_pos.1] = Some(piece);
+                        board[start_pos.0][start_pos.1] = None;
+                    } else {
+                        println!("Enter a valid move");
+                        continue
+                    }
+                },
+                PieceType::King => {
+                    if (KING.check_move)(&board, start_pos, end_pos) {
+                        board[end_pos.0][end_pos.1] = Some(piece);
+                        board[start_pos.0][start_pos.1] = None;
+                    } else {
+                        println!("Enter a valid move");
+                        continue
+                    }
+                },
+            },
+            None => {
+                println!("You have to move a piece");
+                continue
+            },
+        }
+    }
 
 }
 
@@ -504,4 +588,59 @@ pub fn display_board(board: &[[Option<Piece>; 8]; 8]) {
 
     println!("{}", display);
 
+}
+
+pub fn parse_move(expr: &str) -> Option<((usize, usize), (usize, usize))> {
+    let pos_str: Vec<&str> = expr.split(' ').collect();
+    if pos_str.len() != 2 {
+        return None;
+    } else {
+        let start_pos_str: Vec<char> = pos_str[0].chars().collect();
+        let start_pos_1 = match start_pos_str[0] {
+            'A' => 0,
+            'B' => 1,
+            'C' => 2,
+            'D' => 3,
+            'E' => 4,
+            'F' => 5,
+            'G' => 6,
+            'H' => 7,
+            _ => return None,
+        } as usize;
+        let start_pos_2 = match start_pos_str[1] {
+            '1' => 0,
+            '2' => 1,
+            '3' => 2,
+            '4' => 3,
+            '5' => 4,
+            '6' => 5,
+            '7' => 6,
+            '8' => 7,
+            _ => return None,
+        } as usize;
+        let end_pos_str: Vec<char> = pos_str[1].chars().collect();
+        let end_pos_1 = match end_pos_str[0] {
+            'A' => 0,
+            'B' => 1,
+            'C' => 2,
+            'D' => 3,
+            'E' => 4,
+            'F' => 5,
+            'G' => 6,
+            'H' => 7,
+            _ => return None,
+        } as usize;
+        let end_pos_2 = match end_pos_str[1] {
+            '1' => 0,
+            '2' => 1,
+            '3' => 2,
+            '4' => 3,
+            '5' => 4,
+            '6' => 5,
+            '7' => 6,
+            '8' => 7,
+            _ => return None,
+        } as usize;
+        return Some(((start_pos_1, start_pos_2), (end_pos_1, end_pos_2)));
+    }
 }
