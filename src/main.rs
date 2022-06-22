@@ -387,6 +387,14 @@ const KING: Piece = Piece {
         };
         let end_opt = board[end_pos.0][end_pos.1];
 
+        if piece.castle.unwrap() {
+            if move_vec.1 == 0 {
+                if move_vec.0 == 2 {
+
+                }
+            }
+        }
+
         if !(move_vec.0.abs() == 1 || move_vec.1.abs() == -1) || (move_vec.0 == 0 && move_vec.1 == 0) {
             return false;
         }
@@ -429,6 +437,8 @@ fn main() {
         None => println!("Error, no piece selected"),
     }
 
+    display_board(&board);
+
 }
 
 pub fn mut_pieces(board: &mut [[Option<Piece>; 8]; 8], pos1: (usize, usize), pos2: (usize, usize)) -> (&mut Option<Piece>, &mut Option<Piece>) {
@@ -459,5 +469,39 @@ pub fn mut_pieces(board: &mut [[Option<Piece>; 8]; 8], pos1: (usize, usize), pos
     }
 
     pieces
+
+}
+
+pub fn display_board(board: &[[Option<Piece>; 8]; 8]) {
+
+    let mut display: String = "".to_string();
+
+    for i in (0..8).rev() {
+        display.push_str(&format!("{} ", i + 1));
+        for j in 0..8 {
+            match board[j][i] {
+                Some(piece) => display.push(match (piece.piece_type, piece.color) {
+                    (PieceType::Pawn, Color::White) => '♙',
+                    (PieceType::Pawn, Color::Black) => '♟',
+                    (PieceType::Rook, Color::White) => '♖',
+                    (PieceType::Rook, Color::Black) => '♜',
+                    (PieceType::Knight, Color::White) => '♘',
+                    (PieceType::Knight, Color::Black) => '♞',
+                    (PieceType::Bishop, Color::White) => '♗',
+                    (PieceType::Bishop, Color::Black) => '♝',
+                    (PieceType::Queen, Color::White) => '♕',
+                    (PieceType::Queen, Color::Black) => '♛',
+                    (PieceType::King, Color::White) => '♔',
+                    (PieceType::King, Color::Black) => '♚',
+                }),
+                None => display.push(' '),
+            }
+            display.push(' ');
+        }
+        display.push('\n');
+    }
+    display.push_str("  A B C D E F G H");
+
+    println!("{}", display);
 
 }
