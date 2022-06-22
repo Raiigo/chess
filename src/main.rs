@@ -1,4 +1,4 @@
-use std::io::{stdin, stdout, Write};
+use std::{io::{stdin, stdout, Write}, fmt::Debug};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
@@ -30,6 +30,12 @@ impl Piece {
     pub fn color(mut self, color: Color) -> Self {
         self.color = color;
         self
+    }
+}
+
+impl Debug for Piece {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Piece").field("color", &self.color).field("piece_type", &self.piece_type).field("castle", &self.castle).field("jump", &self.jump).field("en_passant", &self.en_passant).finish()
     }
 }
 
@@ -142,7 +148,7 @@ const PAWN: Piece = Piece {
                             None => return true,
                         }
                     }
-                } else if move_vec.1 == 2 && piece.jump.unwrap() {
+                } else if move_vec.1 == -2 && piece.jump.unwrap() {
                     match end_opt {
                         Some(_) => return false,
                         None => {
@@ -166,7 +172,7 @@ const ROOK: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let move_vec: (isize, isize) = ((end_pos.0 as isize - start_pos.0 as isize), (end_pos.1 as isize - start_pos.1 as isize));
         let piece = match board[start_pos.0][start_pos.1] {
             Some(piece) => piece,
             None => return false, // No piece has been selected to be moved
@@ -240,7 +246,7 @@ const KNIGHT: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let move_vec: (isize, isize) = ((end_pos.0 as isize - start_pos.0 as isize), (end_pos.1 as isize - start_pos.1 as isize));
         let piece = match board[start_pos.0][start_pos.1] {
             Some(piece) => if piece.piece_type != PieceType::Knight {
                 return false;
@@ -285,7 +291,7 @@ const BISHOP: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let move_vec: (isize, isize) = ((end_pos.0 as isize - start_pos.0 as isize), (end_pos.1 as isize - start_pos.1 as isize));
         let piece = match board[start_pos.0][start_pos.1] {
             Some(piece) => piece,
             None => return false, // No piece has been selected to be moved
@@ -293,44 +299,50 @@ const BISHOP: Piece = Piece {
         let end_opt = board[end_pos.0][end_pos.1];
 
         if move_vec.0.abs() != move_vec.1.abs() || move_vec.0 == 0 {
+            println!("Error 0");
             return false;
         }
 
         let mut pos_set: Vec<Option<Piece>> = vec![];
 
+        let mut start_pos_mut = start_pos;
+
         if move_vec.0 < 0 {
             if move_vec.1 < 0 {
-                for i in end_pos.0..start_pos.0 {
-                    for j in end_pos.1..start_pos.1 {
-                        pos_set.push(board[i][j]);
-                    }
+                while start_pos_mut.0 != end_pos.0 && start_pos_mut.1 != end_pos.1 {
+                    start_pos_mut.0 -= 1;
+                    start_pos_mut.1 -= 1;
+                    pos_set.push(board[start_pos_mut.0][start_pos_mut.1]);
                 }
             } else if move_vec.1 > 0 {
-                for i in end_pos.0..start_pos.0 {
-                    for j in (start_pos.1 + 1)..(end_pos.1 + 1) {
-                        pos_set.push(board[i][j]);
-                    }
+                while start_pos_mut.0 != end_pos.0 && start_pos_mut.1 != end_pos.1 {
+                    start_pos_mut.0 -= 1;
+                    start_pos_mut.1 += 1;
+                    pos_set.push(board[start_pos_mut.0][start_pos_mut.1]);
                 }
             }
         } else if move_vec.0 > 0 {
             if move_vec.1 < 0 {
-                for i in (start_pos.0 + 1)..(end_pos.0 + 1) {
-                    for j in end_pos.1..start_pos.1 {
-                        pos_set.push(board[i][j]);
-                    }
+                while start_pos_mut.0 != end_pos.0 && start_pos_mut.1 != end_pos.1 {
+                    start_pos_mut.0 += 1;
+                    start_pos_mut.1 -= 1;
+                    pos_set.push(board[start_pos_mut.0][start_pos_mut.1]);
                 }
             } else if move_vec.1 > 0 {
-                for i in (start_pos.0 + 1)..(end_pos.0 + 1) {
-                    for j in (start_pos.1 + 1)..(end_pos.1 + 1) {
-                        pos_set.push(board[i][j]);
-                    }
+                while start_pos_mut.0 != end_pos.0 && start_pos_mut.1 != end_pos.1 {
+                    start_pos_mut.0 += 1;
+                    start_pos_mut.1 += 1;
+                    pos_set.push(board[start_pos_mut.0][start_pos_mut.1]);
                 }
             }
         }
 
         for i in 0..(pos_set.len() - 1) {
             match pos_set[i] {
-                Some(_) => return false,
+                Some(_) => {
+                    println!("Error 1");
+                    return false;
+                },
                 None => continue,
             }
         }
@@ -339,7 +351,10 @@ const BISHOP: Piece = Piece {
             Color::White => {
                 match end_opt {
                     Some(end_piece) => match end_piece.color {
-                        Color::White => return false,
+                        Color::White => {
+                            println!("Error 2");
+                            return false;
+                        },
                         Color::Black => return true,
                     },
                     None => return true,
@@ -349,7 +364,10 @@ const BISHOP: Piece = Piece {
                 match end_opt {
                     Some(end_piece) => match end_piece.color {
                         Color::White => return true,
-                        Color::Black => return false,
+                        Color::Black => {
+                            println!("Error 3");
+                            return false;
+                        },
                     },
                     None => return true,
                 }
@@ -365,9 +383,9 @@ const QUEEN: Piece = Piece {
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
         if (ROOK.check_move)(board, start_pos, end_pos) || (BISHOP.check_move)(board, start_pos, end_pos) {
-            return true
+            return true;
         } else {
-            false
+            return false;
         }
     }
 };
@@ -378,7 +396,7 @@ const KING: Piece = Piece {
     jump: None,
     en_passant: None,
     check_move: |board: &[[Option<Piece>; 8]; 8], start_pos: (usize, usize), end_pos: (usize, usize)| -> bool {
-        let move_vec: (isize, isize) = ((end_pos.0 - start_pos.0) as isize, (end_pos.1 - start_pos.1) as isize);
+        let move_vec: (isize, isize) = ((end_pos.0 as isize - start_pos.0 as isize), (end_pos.1 as isize - start_pos.1 as isize));
         let piece = match board[start_pos.0][start_pos.1] {
             Some(piece) => if piece.piece_type != PieceType::King {
                 return false;
